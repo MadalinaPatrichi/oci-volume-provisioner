@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: demooci-2ba94688
+spec:
+  storageClassName: "oci"
+  selector:
+    matchLabels:
+      oci-availability-domain: "PHX-AD-2"
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi

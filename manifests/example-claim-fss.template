@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: demooci-fss-{{TEST_ID}}
+spec:
+  storageClassName: "fss"
+  selector:
+    matchLabels:
+      oci-availability-domain: "{{REGION}}"
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
