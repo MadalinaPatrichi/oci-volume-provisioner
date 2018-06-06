@@ -672,11 +672,11 @@ def _main():
         _kubectl("-n kube-system create secret generic oci-volume-provisioner " + \
                  "--from-file=config.yaml=" + _get_oci_config_file(),
                  exit_on_error=False)
-        _kubectl("create -f ../../dist/storage-class.yaml", exit_on_error=False)
-        _kubectl("create -f ../../dist/storage-class-ext3.yaml", exit_on_error=False)
+        # _kubectl("create -f ../../dist/storage-class.yaml", exit_on_error=False)
+        # _kubectl("create -f ../../dist/storage-class-ext3.yaml", exit_on_error=False)
         _kubectl("create -f ../../dist/storage-class-fss.yaml", exit_on_error=False)
-        _kubectl("create -f ../../dist/oci-volume-provisioner-rbac.yaml", exit_on_error=False)
-        _kubectl("create -f ../../dist/oci-volume-provisioner.yaml", exit_on_error=False)
+        # _kubectl("create -f ../../dist/oci-volume-provisioner-rbac.yaml", exit_on_error=False)
+        # _kubectl("create -f ../../dist/oci-volume-provisioner.yaml", exit_on_error=False)
         pod_name, _, _ = _wait_for_pod_status("Running", test_id, POD_VOLUME)
         compartment_id = _get_compartment_id(pod_name)
     else:
@@ -699,7 +699,7 @@ def _main():
                             _create_yaml("../../examples/example-claim-ext3.template", test_id, None),
                             "demooci-ext3-" + test_id, args['check_oci'])
 
-        _log("Running system test: No AD specified", as_banner=True)
+        _log("Running system test: Create volume with FSS", as_banner=True)
         _test_create_volume(compartment_id,
                             _create_yaml("../../examples/example-claim-no-AD.template", test_id, None),
                             "demooci-no-ad-" + test_id, args['check_oci'])
