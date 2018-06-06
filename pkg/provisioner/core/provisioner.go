@@ -90,7 +90,7 @@ func NewOCIProvisioner(kubeClient kubernetes.Interface, nodeInformer informersv1
 		storageClassProvisioners: map[string]plugin.ProvisionerPlugin{
 			"oci":      blockProvisioner,
 			"oci-ext3": blockProvisioner,
-			"fs":       filestorage.NewFilesystemProvisioner(client),
+			"oci-fss":  filestorage.NewFilesystemProvisioner(client),
 		},
 	}
 }

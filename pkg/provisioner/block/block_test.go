@@ -26,6 +26,7 @@ import (
 	"github.com/kubernetes-incubator/external-storage/lib/controller"
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/core"
+	"github.com/oracle/oci-go-sdk/filestorage"
 	"github.com/oracle/oci-go-sdk/identity"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +36,7 @@ import (
 var (
 	volumeBackupID = "dummyVolumeBackupId"
 	defaultAD      = identity.AvailabilityDomain{Name: common.String("PHX-AD-1"), CompartmentId: common.String("ocid1.compartment.oc1")}
+	fileSystemID   = "dummyFileSystemId"
 )
 
 func TestResolveFSTypeWhenNotConfigured(t *testing.T) {
@@ -66,6 +68,17 @@ func (c *mockBlockStorageClient) DeleteVolume(ctx context.Context, request core.
 	return core.DeleteVolumeResponse{}, nil
 }
 
+type mockFileStorageClient struct {
+}
+
+func (c *mockFileStorageClient) CreateFileSystem(ctx context.Context, request filestorage.CreateFileSystemRequest) (response filestorage.CreateFileSystemResponse, err error) {
+	return filestorage.CreateFileSystemResponse{FileSystem: filestorage.FileSystem{Id: common.String(fileSystemID)}}, nil
+}
+
+func (c *mockFileStorageClient) DeleteFileSystem(ctx context.Context, request filestorage.DeleteFileSystemRequest) (response filestorage.DeleteFileSystemResponse, err error) {
+	return filestorage.DeleteFileSystemResponse{}, nil
+}
+
 type mockIdentityClient struct {
 	common.BaseClient
 }
@@ -79,6 +92,10 @@ type mockProvisionerClient struct {
 
 func (p *mockProvisionerClient) BlockStorage() client.BlockStorage {
 	return &mockBlockStorageClient{}
+}
+
+func (p *mockProvisionerClient) FileStorage() client.FileStorage {
+	return &mockFileStorageClient{}
 }
 
 func (p *mockProvisionerClient) Identity() client.Identity {
