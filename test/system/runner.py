@@ -679,7 +679,6 @@ def _main():
         _kubectl("create -f ../../dist/oci-volume-provisioner.yaml", exit_on_error=False)
         pod_name, _, _ = _wait_for_pod_status("Running", test_id, POD_VOLUME)
         compartment_id = _get_compartment_id(pod_name)
-        compartment_id = None
     else:
         compartment_id = None
 
