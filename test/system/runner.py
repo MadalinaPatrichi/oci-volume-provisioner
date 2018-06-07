@@ -49,6 +49,8 @@ POD_VOLUME = "volume"
 BLOCK_STORAGE = "block"
 FS_STORAGE = "fileSystem"
 DEFAULT_AVAILABILITY_DOMAIN="NWuj:PHX-AD-2"
+LIFECYCLE_STATE = {BLOCK_STORAGE: 'AVAILABLE',
+                   FS_STORAGE: 'ACTIVE'}
 
 # On exit return 0 for success or any other integer for a failure.
 # If write_report is true then write a completion file to the Sonabuoy plugin result file.
