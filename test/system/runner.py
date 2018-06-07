@@ -743,6 +743,7 @@ def _main():
                             "demooci-no-ad-" + test_id, args['check_oci'])
 
         _log("Running system test: Create volume with FSS", as_banner=True)
+        _availability_domain = _get_terraform_output_var(terraform_env, TERRAFORM_AVAILABILITY_DOMAIN)
         _test_create_volume(compartment_id,
                             _create_yaml("../../manifests/example-claim-fss.template", test_id, _get_region()),
                             "demooci-fss-" + test_id, args['check_oci'], availability_domain=availability_domain,
