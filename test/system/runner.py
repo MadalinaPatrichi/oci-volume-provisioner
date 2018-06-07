@@ -294,17 +294,20 @@ def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOC
     @param availability_domain: Availability domain to look in for
     @type availability_domain: C{Str}'''
     if storageType == BLOCK_STORAGE:
+        _log("Retrieving block volumes")
         client = oci.core.blockstorage_client.BlockstorageClient(_oci_config())
         if backup:
             volumes= oci.pagination.list_call_get_all_results(client.list_volume_backups, compartment_id)
         else:
             volumes = oci.pagination.list_call_get_all_results(client.list_volumes, compartment_id)
     else:
+        _log("Retrieving file systems")
         client = oci.file_storage.FileStorageClient(_oci_config())
         volumes = oci.pagination.list_call_get_all_results(client.list_file_systems, compartment_id,
                                                            availability_domain)
     _log("Getting status for volume %s" % volume)
     for vol in _get_json_doc(str(volumes.data)):
+        log.debug(">>>>>>>>>>>>>>>Volume %s" % vol)
         if vol['id'].endswith(volume) and vol['lifecycle_state'] == state:
             return True
     return False
