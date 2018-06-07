@@ -745,7 +745,7 @@ def _main():
         _log("Running system test: Create volume with FSS", as_banner=True)
         _test_create_volume(compartment_id,
                             _create_yaml("../../manifests/example-claim-fss.template", test_id, _get_region()),
-                            "demooci-fss-" + test_id, args['check_oci'], availability_domain=_availability_domain,
+                            "demooci-fss-" + test_id, args['check_oci'], availability_domain=availability_domain,
                             storageType=FS_STORAGE)
         _log("Running system test: Create volume from backup", as_banner=True)
         if args['check_oci']: 
