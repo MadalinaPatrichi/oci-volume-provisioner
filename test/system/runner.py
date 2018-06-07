@@ -447,7 +447,7 @@ def _create_yaml(template, test_id, region=None, backup_id=None):
     return yaml_file
 
 
-ls -def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_oci, test_id=None, 
+def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_oci, test_id=None, 
                         availability_domain=None, verify_func=None, storageType=BLOCK_STORAGE):
     '''Test making a volume claim from a configuration file
     @param backup_ocid: Verify whether the volume created from a backup contains backup info
