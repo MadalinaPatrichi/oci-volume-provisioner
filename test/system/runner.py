@@ -286,8 +286,12 @@ def _oci_config():
             _finish_with_exit_code(1)
 
 
-def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOCK_STORAGE):
-    '''Verify whether the volume is available or not'''
+def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOCK_STORAGE, availability_domain=None):
+    '''Verify whether the volume is available or not
+    @param storageType: Storage type to search for volumes in
+    @type storageType: C{Str}
+    @param availability_domain: Availability domain to look in for
+    @type availability_domain: C{Str}'''
     if storageType == BLOCK_STORAGE:
         client = oci.core.blockstorage_client.BlockstorageClient(_oci_config())
         if backup:
@@ -296,7 +300,8 @@ def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOC
             volumes = oci.pagination.list_call_get_all_results(client.list_volumes, compartment_id)
     else:
         client = oci.file_storage.FileStorageClient(_oci_config())
-        volumes = oci.pagination.list_call_get_all_results(client.list_file_systems, compartment_id)
+        volumes = oci.pagination.list_call_get_all_results(client.list_file_systems, compartment_id,
+                                                           availability_domain)
     _log("Getting status for volume %s" % volume)
     for vol in _get_json_doc(str(volumes.data)):
         if vol['id'].endswith(volume) and vol['lifecycle_state'] == state:
@@ -341,9 +346,10 @@ def _create_volume_from_backup(backup_ocid, test_id, availability_domain, compar
     except Exception as exc:
         _log("Failed to create volume from backup %s" % exc)
 
-def _wait_for_volume(compartment_id, volume, state, backup=False, storageType=BLOCK_STORAGE):
+def _wait_for_volume(compartment_id, volume, state, backup=False, storageType=BLOCK_STORAGE, availability_domain=None):
     num_polls = 0
-    while not _volume_exists(compartment_id, volume, state, backup, storageType=storageType):
+    while not _volume_exists(compartment_id, volume, state, backup, storageType=storageType, 
+                             availability_domain=availability_domain):
         _log("    waiting...")
         time.sleep(1)
         num_polls += 1
@@ -351,12 +357,14 @@ def _wait_for_volume(compartment_id, volume, state, backup=False, storageType=BL
             return False
     return True
 
-def _wait_for_volume_to_create(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE):
-    return _wait_for_volume(compartment_id, volume, 'AVAILABLE', backup, storageType=storageType)
+def _wait_for_volume_to_create(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE, availability_domain=None):
+    return _wait_for_volume(compartment_id, volume, 'AVAILABLE', backup, storageType=storageType, 
+                            availability_domain=availability_domain)
 
 
-def _wait_for_volume_to_delete(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE):
-    return _wait_for_volume(compartment_id, volume, 'TERMINATED', backup, storageType=storageType)
+def _wait_for_volume_to_delete(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE, availability_domain=None):
+    return _wait_for_volume(compartment_id, volume, 'TERMINATED', backup, storageType=storageType,
+                            availability_domain=availability_domain)
 
 
 def _get_compartment_id(pod_name):
@@ -459,7 +467,8 @@ def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_o
 
     if check_oci:
         _log("Querying the OCI api to make sure a volume with this name exists...")
-        if not _wait_for_volume_to_create(compartment_id, volume, storageType=storageType):
+        if not _wait_for_volume_to_create(compartment_id, volume, storageType=storageType, 
+                                          availability_domain=availability_domain):
             _log("Failed to find volume with name: " + volume)
             _finish_with_exit_code(1)
         _log("Volume: " + volume + " is present and available")
@@ -472,8 +481,10 @@ def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_o
 
     if check_oci:
         _log("Querying the OCI api to make sure a volume with this name now doesnt exist...")
-        _wait_for_volume_to_delete(compartment_id, volume, storageType=storageType)
-        if not _volume_exists(compartment_id, volume, 'TERMINATED', storageType=storageType):
+        _wait_for_volume_to_delete(compartment_id, volume, storageType=storageType,
+                                   availability_domain=availability_domain)
+        if not _volume_exists(compartment_id, volume, 'TERMINATED', storageType=storageType,
+                              availability_domain=availability_domain):
             _log("Volume with name: " + volume + " still exists")
             _finish_with_exit_code(1)
         _log("Volume: " + volume + " has now been terminated")
@@ -604,7 +615,7 @@ def _verify_file_existance_via_replication_controller(rc_name, file_name="hello.
         sys.exit(1)
     _log("Yes it does!")
 
-def  _setup_create_volume_from_backup(terraform_env, test_id, storageType=BLOCK_STORAGE):
+def  _setup_create_volume_from_backup(terraform_env, test_id, storageType=BLOCK_STORAGE, availability_domain=None):
     '''Setup environment for creating a volume from a backup device
     @param test_id: Test id used to append to component names
     @type test_id : C{Str}
@@ -621,8 +632,9 @@ def  _setup_create_volume_from_backup(terraform_env, test_id, storageType=BLOCK_
     _verify_file_existance_via_replication_controller(_rc_name)
     # Create backup from generated volume
     _backup_ocid, compartment_id, _volume_name = _create_backup(_get_terraform_output_var(terraform_env, TERRAFORM_VOLUME_OCID), test_id)
-    if not _wait_for_volume_to_create(compartment_id, _backup_ocid, backup=True, storageType=storageType):
-        _log("Failed to find backup with name: " + _volume_name)
+    if not _wait_for_volume_to_create(compartment_id, _backup_ocid, backup=True, storageType=storageType,
+                                      availability_domain=availability_domain):
+        _log("Failed to find backup with name: " + _volume_name)  
     return _backup_ocid, _availability_domain
 
 def _tear_down_create_volume_from_backup(terraform_env, backup_ocid):
@@ -733,7 +745,8 @@ def _main():
         _log("Running system test: Create volume with FSS", as_banner=True)
         _test_create_volume(compartment_id,
                             _create_yaml("../../manifests/example-claim-fss.template", test_id, _get_region()),
-                            "demooci-fss-" + test_id, args['check_oci'], storageType=FS_STORAGE)
+                            "demooci-fss-" + test_id, args['check_oci'], availability_domain=_availability_domain,
+                            storageType=FS_STORAGE)
         _log("Running system test: Create volume from backup", as_banner=True)
         if args['check_oci']: 
             terraform_env = _get_terraform_env()
