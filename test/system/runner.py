@@ -46,6 +46,8 @@ REPORT_DIR_PATH="/tmp/results"
 REPORT_FILE="done"
 POD_CONTROLLER = "controller"
 POD_VOLUME = "volume"
+BLOCK_STORAGE = "block"
+FS_STORAGE = "fileSystem"
 
 # On exit return 0 for success or any other integer for a failure.
 # If write_report is true then write a completion file to the Sonabuoy plugin result file.
@@ -284,9 +286,12 @@ def _oci_config():
             _finish_with_exit_code(1)
 
 
-def _volume_exists(compartment_id, volume, state, backup=False):
+def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOCK_STORAGE):
     '''Verify whether the volume is available or not'''
-    client = oci.core.blockstorage_client.BlockstorageClient(_oci_config())
+    if storageType == BLOCK_STORAGE:
+        client = oci.core.blockstorage_client.BlockstorageClient(_oci_config())
+    else:
+        client = oci.file_storage.FileStorageClient(_oci_config())
     if backup:
         volumes= oci.pagination.list_call_get_all_results(client.list_volume_backups, compartment_id)
     else:
@@ -335,9 +340,9 @@ def _create_volume_from_backup(backup_ocid, test_id, availability_domain, compar
     except Exception as exc:
         _log("Failed to create volume from backup %s" % exc)
 
-def _wait_for_volume(compartment_id, volume, state, backup=False):
+def _wait_for_volume(compartment_id, volume, state, backup=False, storageType=BLOCK_STORAGE):
     num_polls = 0
-    while not _volume_exists(compartment_id, volume, state, backup):
+    while not _volume_exists(compartment_id, volume, state, backup, storageType=storageType):
         _log("    waiting...")
         time.sleep(1)
         num_polls += 1
@@ -345,12 +350,12 @@ def _wait_for_volume(compartment_id, volume, state, backup=False):
             return False
     return True
 
-def _wait_for_volume_to_create(compartment_id, volume, backup=False):
-    return _wait_for_volume(compartment_id, volume, 'AVAILABLE', backup)
+def _wait_for_volume_to_create(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE):
+    return _wait_for_volume(compartment_id, volume, 'AVAILABLE', backup, storageType=storageType)
 
 
-def _wait_for_volume_to_delete(compartment_id, volume, backup=False):
-    return _wait_for_volume(compartment_id, volume, 'TERMINATED', backup)
+def _wait_for_volume_to_delete(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE):
+    return _wait_for_volume(compartment_id, volume, 'TERMINATED', backup, storageType=storageType)
 
 
 def _get_compartment_id(pod_name):
@@ -442,7 +447,7 @@ def _create_yaml(template, test_id, region=None, backup_id=None):
 
 
 def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_oci, test_id=None, 
-                        availability_domain=None, verify_func=None):
+                        availability_domain=None, verify_func=None, storageType=BLOCK_STORAGE):
     '''Test making a volume claim from a configuration file
     @param backup_ocid: Verify whether the volume created from a backup contains backup info
     @type backup_ocid: C{Str}'''
@@ -453,7 +458,7 @@ def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_o
 
     if check_oci:
         _log("Querying the OCI api to make sure a volume with this name exists...")
-        if not _wait_for_volume_to_create(compartment_id, volume):
+        if not _wait_for_volume_to_create(compartment_id, volume, storageType=storageType):
             _log("Failed to find volume with name: " + volume)
             _finish_with_exit_code(1)
         _log("Volume: " + volume + " is present and available")
@@ -466,8 +471,8 @@ def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_o
 
     if check_oci:
         _log("Querying the OCI api to make sure a volume with this name now doesnt exist...")
-        _wait_for_volume_to_delete(compartment_id, volume)
-        if not _volume_exists(compartment_id, volume, 'TERMINATED'):
+        _wait_for_volume_to_delete(compartment_id, volume, storageType=storageType)
+        if not _volume_exists(compartment_id, volume, 'TERMINATED', storageType=storageType):
             _log("Volume with name: " + volume + " still exists")
             _finish_with_exit_code(1)
         _log("Volume: " + volume + " has now been terminated")
@@ -598,7 +603,7 @@ def _verify_file_existance_via_replication_controller(rc_name, file_name="hello.
         sys.exit(1)
     _log("Yes it does!")
 
-def  _setup_create_volume_from_backup(terraform_env, test_id):
+def  _setup_create_volume_from_backup(terraform_env, test_id, storageType=BLOCK_STORAGE):
     '''Setup environment for creating a volume from a backup device
     @param test_id: Test id used to append to component names
     @type test_id : C{Str}
@@ -615,7 +620,7 @@ def  _setup_create_volume_from_backup(terraform_env, test_id):
     _verify_file_existance_via_replication_controller(_rc_name)
     # Create backup from generated volume
     _backup_ocid, compartment_id, _volume_name = _create_backup(_get_terraform_output_var(terraform_env, TERRAFORM_VOLUME_OCID), test_id)
-    if not _wait_for_volume_to_create(compartment_id, _backup_ocid, backup=True):
+    if not _wait_for_volume_to_create(compartment_id, _backup_ocid, backup=True, storageType=storageType):
         _log("Failed to find backup with name: " + _volume_name)
     return _backup_ocid, _availability_domain
 
@@ -727,7 +732,7 @@ def _main():
         _log("Running system test: Create volume with FSS", as_banner=True)
         _test_create_volume(compartment_id,
                             _create_yaml("../../manifests/example-claim-fss.template", test_id, _get_region()),
-                            "demooci-fss-" + test_id, args['check_oci'])
+                            "demooci-fss-" + test_id, args['check_oci'], storageType=FS_STORAGE)
         _log("Running system test: Create volume from backup", as_banner=True)
         if args['check_oci']: 
             terraform_env = _get_terraform_env()
