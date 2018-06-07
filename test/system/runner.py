@@ -290,12 +290,13 @@ def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOC
     '''Verify whether the volume is available or not'''
     if storageType == BLOCK_STORAGE:
         client = oci.core.blockstorage_client.BlockstorageClient(_oci_config())
+        if backup:
+            volumes= oci.pagination.list_call_get_all_results(client.list_volume_backups, compartment_id)
+        else:
+            volumes = oci.pagination.list_call_get_all_results(client.list_volumes, compartment_id)
     else:
         client = oci.file_storage.FileStorageClient(_oci_config())
-    if backup:
-        volumes= oci.pagination.list_call_get_all_results(client.list_volume_backups, compartment_id)
-    else:
-        volumes = oci.pagination.list_call_get_all_results(client.list_volumes, compartment_id)
+        volumes = oci.pagination.list_call_get_all_results(client.list_file_systems, compartment_id)
     _log("Getting status for volume %s" % volume)
     for vol in _get_json_doc(str(volumes.data)):
         if vol['id'].endswith(volume) and vol['lifecycle_state'] == state:
@@ -446,7 +447,7 @@ def _create_yaml(template, test_id, region=None, backup_id=None):
     return yaml_file
 
 
-def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_oci, test_id=None, 
+ls -def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_oci, test_id=None, 
                         availability_domain=None, verify_func=None, storageType=BLOCK_STORAGE):
     '''Test making a volume claim from a configuration file
     @param backup_ocid: Verify whether the volume created from a backup contains backup info
