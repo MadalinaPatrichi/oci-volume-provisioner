@@ -307,7 +307,7 @@ def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOC
                                                            availability_domain)
     _log("Getting status for volume %s" % volume)
     for vol in _get_json_doc(str(volumes.data)):
-        _log">>>>>>>>>>>>>>>Volume %s" % vol)
+        _log(">>>>>>>>>>>>>>>Volume %s" % vol)
         if vol['id'].endswith(volume) and vol['lifecycle_state'] == state:
             return True
     return False
