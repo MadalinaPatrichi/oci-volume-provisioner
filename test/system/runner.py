@@ -49,8 +49,10 @@ POD_VOLUME = "volume"
 BLOCK_STORAGE = "block"
 FS_STORAGE = "fileSystem"
 DEFAULT_AVAILABILITY_DOMAIN="NWuj:PHX-AD-2"
-LIFECYCLE_STATE = {BLOCK_STORAGE: 'AVAILABLE',
-                   FS_STORAGE: 'ACTIVE'}
+LIFECYCLE_STATE_ON = {BLOCK_STORAGE: 'AVAILABLE',
+                      FS_STORAGE: 'ACTIVE'}
+LIFECYCLE_STATE_OFF = {BLOCK_STORAGE: 'TERMINATED',
+                       FS_STORAGE:'DELETED'}
 
 # On exit return 0 for success or any other integer for a failure.
 # If write_report is true then write a completion file to the Sonabuoy plugin result file.
@@ -364,12 +366,12 @@ def _wait_for_volume(compartment_id, volume, state, backup=False, storageType=BL
     return True
 
 def _wait_for_volume_to_create(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE, availability_domain=None):
-    return _wait_for_volume(compartment_id, volume, LIFECYCLE_STATE[storageType], backup, storageType=storageType, 
+    return _wait_for_volume(compartment_id, volume, LIFECYCLE_STATE_ON[storageType], backup, storageType=storageType, 
                             availability_domain=availability_domain)
 
 
 def _wait_for_volume_to_delete(compartment_id, volume, backup=False, storageType=BLOCK_STORAGE, availability_domain=None):
-    return _wait_for_volume(compartment_id, volume, 'TERMINATED', backup, storageType=storageType,
+    return _wait_for_volume(compartment_id, volume, LIFECYCLE_STATE_OFF[storageType], backup, storageType=storageType,
                             availability_domain=availability_domain)
 
 
