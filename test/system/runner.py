@@ -311,7 +311,6 @@ def _volume_exists(compartment_id, volume, state, backup=False, storageType=BLOC
                                                            availability_domain)
     _log("Getting status for volume %s" % volume)
     for vol in _get_json_doc(str(volumes.data)):
-        _log(">>>>>>>>>>>>>>>Volume %s %s" % (state, vol))
         if vol['id'].endswith(volume) and vol['lifecycle_state'] == state:
             return True
     return False
@@ -471,7 +470,7 @@ def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_o
     _kubectl("create -f " + claim_target, exit_on_error=False)
 
     volume = _get_volume_and_wait(claim_volume_name)
-    _log("Created volume with name: " + volume)
+    _log("Created volume with name: %s" % str(volume))
 
     if check_oci:
         _log("Querying the OCI api to make sure a volume with this name exists...")
