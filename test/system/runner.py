@@ -490,7 +490,7 @@ def _test_create_volume(compartment_id, claim_target, claim_volume_name, check_o
         _log("Querying the OCI api to make sure a volume with this name now doesnt exist...")
         _wait_for_volume_to_delete(compartment_id, volume, storageType=storageType,
                                    availability_domain=availability_domain)
-        if not _volume_exists(compartment_id, volume, 'TERMINATED', storageType=storageType,
+        if not _volume_exists(compartment_id, volume, LIFECYCLE_STATE_OFF[storageType], storageType=storageType,
                               availability_domain=availability_domain):
             _log("Volume with name: " + volume + " still exists")
             _finish_with_exit_code(1)
