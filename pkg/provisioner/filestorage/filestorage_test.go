@@ -16,8 +16,26 @@ package filestorage
 
 import (
 	"testing"
+
+	"github.com/kubernetes-incubator/external-storage/lib/controller"
+	"github.com/oracle/oci-go-sdk/common"
+	"github.com/oracle/oci-go-sdk/identity"
+	"github.com/oracle/oci-volume-provisioner/pkg/helpers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
 func TestCreateVolumeWithFSS(t *testing.T) {
+	// test creating a volume on a file system storage
+	options := controller.VolumeOptions{PVName: "dummyVolumeOptions",
+		PVC: &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{},
+		}}
+	ad := identity.AvailabilityDomain{Name: common.String("dummyAdName"), CompartmentId: common.String("dummyCompartmentId")}
+	fss := filesystemProvisioner{client: helpers.NewClientProvisioner(nil)}
+	_, err := fss.Provision(options, &ad)
+	if err != nil {
+		t.Fatalf("Failed to provision volume from block storage: %v", err)
+	}
 
 }
